@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <title>Console â€” System Monitor</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--bg:#000;--text:#00ff55;--muted:#55ff88;}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family: "Courier New",monospace;font-size:15px;}
+    #screen{box-sizing:border-box;padding:18px;height:100vh;overflow:auto;}
+    .line{white-space:pre-wrap;line-height:1.35;opacity:0;display:block;}
+    .bar{display:inline-block;height:12px;border:1px solid rgba(255,255,255,0.06);margin-left:6px;background:rgba(255,255,255,0.03);vertical-align:middle;}
+    .bar-inner{height:100%;width:0;background:linear-gradient(90deg, rgba(0,255,100,0.12), rgba(0,255,100,0.25));}
+    #reveal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);color:#fff;font-size:28px;flex-direction:column;visibility:hidden;}
+    #reveal small{font-size:14px;color:#ddd;margin-top:10px;}
+    #reveal button{margin-top:18px;padding:10px 16px;border-radius:6px;border:0;background:#00a86b;color:white;cursor:pointer;font-size:14px;}
+    /* subtle cursor */
+    .cursor{display:inline-block;width:9px;height:18px;background:var(--text);margin-left:6px;vertical-align:bottom;animation:blink 1s steps(2,end) infinite;}
+    @keyframes blink{50%{opacity:0}}
+  </style>
+</head>
+<body>
+  <div id="screen" aria-live="polite" role="status"></div>
+
+  <div id="reveal" role="dialog" aria-modal="true">
+    <div>ðŸ™ƒ <strong>bank access</strong> â€” scam alert .... your Bank account and full mobile phone hacked</div>
+    <small>aapki jindagi mere phone me hai</small>
+    <button onclick="location.reload()">Queen ðŸ‘‘</button>
+  </div>
+
+<script>
+const screen = document.getElementById('screen');
+const reveal = document.getElementById('reveal');
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function randomIP(){ return `${rand(1,223)}.${rand(0,255)}.${rand(0,255)}.${rand(1,254)}`; }
+function randomHex(len){ let s=''; const chars='0123456789abcdef'; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*16)]; return s; }
+
+async function typeLine(text, speed=30){
+  const el = document.createElement('div');
+  el.className='line';
+  screen.appendChild(el);
+  for(let i=0;i<text.length;i++){
+    el.textContent += text.charAt(i);
+    screen.scrollTop = screen.scrollHeight;
+    await sleep(speed + Math.random()*20);
+  }
+  el.style.opacity = 1;
+  await sleep(300);
+  return el;
+}
+
+async function typeWithCursor(text,speed=28){
+  const el = await typeLine('');
+  const cur = document.createElement('span'); cur.className='cursor';
+  el.appendChild(cur);
+  for(let i=0;i<text.length;i++){
+    cur.insertAdjacentText('beforebegin', text.charAt(i));
+    screen.scrollTop = screen.scrollHeight;
+    await sleep(speed + Math.random()*12);
+  }
+  cur.remove();
+  el.style.opacity=1;
+  await sleep(250);
+  return el;
+}
+
+async function showProgress(label, duration=1200){
+  const container = document.createElement('div');
+  container.className='line';
+  container.textContent = label;
+  const bar = document.createElement('span'); bar.className='bar'; bar.style.width='40%';
+  const inner = document.createElement('span'); inner.className='bar-inner';
+  bar.appendChild(inner);
+  container.appendChild(bar);
+  screen.appendChild(container);
+  const steps = 40;
+  for(let i=0;i<=steps;i++){
+    inner.style.width = (i/steps*100) + '%';
+    screen.scrollTop = screen.scrollHeight;
+    await sleep(duration/steps + Math.random()*10);
+  }
+  await sleep(220);
+  return container;
+}
+
+async function fakeSession(){
+  // header noise
+  for(let i=0;i<5;i++){
+    await typeLine(`[${new Date().toISOString()}] system: kernel log ${randomHex(6)}${randomHex(6)}`);
+  }
+
+  await typeWithCursor('> establishing outbound connection to ' + randomIP() + ':443 â€¦');
+  await showProgress('status: secure channel', 1000);
+
+  await typeLine('> tls handshake complete');
+  await typeLine('> enumerating open ports on target: ' + randomIP());
+  await showProgress('ports scan', 900);
+
+  // simulate vulnerabilities found
+  await typeLine('> found service: ssh (open)');
+  await typeLine('> target fingerprint: ' + randomHex(40));
+  await typeLine('> attempting credential sprayâ€¦');
+
+  // simulate password attempts
+  const samplePasswords = ['summer2024','password123','qwerty!@#','letmein','welcome1','admin@123'];
+  for(let p of samplePasswords){
+    await typeLine(`trying password: ${p} â€” result: ${Math.random()<0.15 ? 'SUCCESS' : 'failed'}`);
+    await sleep(300);
+  }
+
+  await typeLine('> password found: ********');
+  await showProgress('injecting payload', 1200);
+
+  // show fake file extraction lines
+  const files = [
+    '/home/admin/notes.txt',
+    '/var/www/html/config.php',
+    '/home/user/Passwords.xlsx',
+    '/etc/ssh/ssh_config'
+  ];
+  for(let f of files){
+    await typeLine(`extracting: ${f}`);
+    await sleep(240);
+  }
+
+  await typeLine('> uploading archive to remote host ' + randomIP());
+  await showProgress('upload', 1000);
+
+  // dramatic finish
+  await typeLine('> operation complete. session closed.');
+  await sleep(800);
+
+  // reveal after short pause
+  await sleep(900);
+  reveal.style.visibility = 'visible';
+}
+
+// start
+fakeSession();
+</script>
+</body>
+</html>
